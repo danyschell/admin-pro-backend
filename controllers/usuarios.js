@@ -6,10 +6,20 @@ const { generarJWT } = require('../helpers/jwt');
 
  const getUsuarios = async(req, res) => {
 
-    const usuarios = await Usuario.find({},'nombre email password google');
+    const desde = Number(req.query.desde) || 0;
+
+    const [usuarios, total] = await Promise.all([
+                    Usuario
+                        .find({},'nombre email password google img')
+                        .skip(desde)
+                        .limit(5),
+                        
+                    Usuario.countDocuments()
+    ]);
 
     res.json({
         ok: true,
+        total,
         usuarios
     });
 
@@ -54,7 +64,7 @@ const crearUsuario = async(req, res = response) => {
         console.log(error);
         res.status(500).json({
             ok: false,
-            msg: 'error inesperado'
+            error
         });
     }
 
