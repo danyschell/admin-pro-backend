@@ -44,28 +44,33 @@ const crearHospital = async(req, res = response) => {
 
 const actualizarHospital = async(req, res = response) => {
 
-    
-    try{
+    const uid = req.uid;
+    const id = req.params.id;
 
-        /*const existe = await Usuario.findOne({email: email});
+    try {
 
-        if( existe ) {
-            return res.status(400).json({
+        const hospital = await Hospital.findById( id );
+
+        if( !hospital ) {
+            return res.status(404).json({
                 ok: false,
-                msg:'correo ya existe'
+                msg:'hospital no existe'
             })
 
         }
-        */
-        //const hospital;// = new Usuario( req.body );
-  
-        // Guardar usuario
-        //await usuario.save();
+        
+        //hospital.nombre = req.body.nombre;
+        const cambiosHospital = {
+            ...req.body,
+            usuario: uid
+        }
 
-  
+        // Guardar hospital
+        const hospitalActualizado = await Hospital.findByIdAndUpdate(id, cambiosHospital, {new: true});
+
         res.json({
             ok: true,
-            msg: 'hospital'
+            hospital: hospitalActualizado
         });
 
     }
@@ -82,11 +87,35 @@ const actualizarHospital = async(req, res = response) => {
 
 const borrarHospital = async(req, res = response) => {
 
-    res.json({
+    const id = req.params.id;
 
-        ok: true,
-        msg: 'borrar'
-    })
+    try{
+
+        //validaciones
+        const hospital = await Hospital.findById(id);
+        if(!hospital){
+                return res.status(404).json({
+                    ok: false,
+                    msg: 'hospital no existe'
+                });
+        }
+
+        await Hospital.findByIdAndDelete(id);
+
+        res.status(200).json({
+            ok: true,
+            msg: 'Hospital eliminado'
+        });
+
+
+    }catch(error){
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            msg: 'Error en Delete'           
+        });
+    }
 }
 
 

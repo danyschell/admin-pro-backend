@@ -18,10 +18,7 @@ const crearMedico = async(req, res = response) => {
 
     
     const uid = req.uid;
-
-    console.log('uid',uid);
-
-    const medico = new Medico( {
+    const medico = new Medico({
         usuario: uid,
         ...req.body
     });
@@ -49,28 +46,34 @@ const crearMedico = async(req, res = response) => {
 
 const actualizarMedico = async(req, res = response) => {
 
-    
-    try{
+    const uid = req.uid;
+    const id = req.params.id;
 
-        /*const existe = await Usuario.findOne({email: email});
+    try {
 
-        if( existe ) {
-            return res.status(400).json({
+        const medico = await Medico.findById( id );
+
+        if( !medico ) {
+            return res.status(404).json({
                 ok: false,
-                msg:'correo ya existe'
+                msg:'Medico no existe'
             })
 
         }
-        */
-        //const hospital;// = new Usuario( req.body );
-  
-        // Guardar usuario
-        //await usuario.save();
+        
+        const cambiosMedico = {
+            ...req.body,
+            usuario: uid
+        }
 
-  
+        // Guardar medico
+        const medicoActualizado = await Medico.findByIdAndUpdate(id, cambiosMedico, {new: true})
+                                                                .populate('usuario','nombre')
+                                                                .populate('hospital','nombre');
+
         res.json({
             ok: true,
-            msg: 'actualizar medico'
+            medico: medicoActualizado
         });
 
     }
@@ -82,16 +85,39 @@ const actualizarMedico = async(req, res = response) => {
         });
     }
 
-
 }
 
 const borrarMedico = async(req, res = response) => {
 
-    res.json({
+    const id = req.params.id;
 
-        ok: true,
-        msg: 'borrar medico'
-    })
+    try{
+
+        //validaciones
+        const medico = await Medico.findById(id);
+        if(!medico){
+                return res.status(404).json({
+                    ok: false,
+                    msg: 'Medico no existe'
+                });
+        }
+
+        await Medico.findByIdAndDelete(id);
+
+        res.status(200).json({
+            ok: true,
+            msg: 'Medico eliminado'
+        });
+
+
+    }catch(error){
+        console.log(error);
+
+        res.status(500).json({
+            ok: false,
+            msg: 'Error en Delete'           
+        });
+    }
 }
 
 
