@@ -10,7 +10,7 @@ const { generarJWT } = require('../helpers/jwt');
 
     const [usuarios, total] = await Promise.all([
                     Usuario
-                        .find({},'nombre email password google img')
+                        .find({},'nombre email password google img role')
                         .skip(desde)
                         .limit(5),
                         
@@ -86,8 +86,6 @@ const actualizarUsuario = async(req, res = response) => {
                }) 
         }
 
-        //TODO Validar token y verificar usuario
-
         // actualizar usuario - inicializar variables del req.body
         const {password, google, email, ...campos} = req.body;
 
@@ -103,7 +101,15 @@ const actualizarUsuario = async(req, res = response) => {
             }
         }
         //volvemos a agregar el email del req.body, ya verificado
-        campos.email = email;    
+        if ( !usuarioDB.google) {
+            campos.email = email;
+        } else if (usuarioDB.email !== email) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Usuarios de google no pueden cambiar su correo'
+            });
+        }
+
         const usuarioActualizado = await Usuario.findByIdAndUpdate(uid, campos, {new: true});
 
         res.json({
