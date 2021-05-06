@@ -1,108 +1,104 @@
 const { response } = require('express');
 const bcrypt = require('bcryptjs');
-const { validationResult } = require('express-validator');
 
 const Usuario = require('../models/usuario');
 const { generarJWT } = require('../helpers/jwt');
 const { googleVerify } = require('../helpers/google-verify');
+const { getMenuFrontEnd } = require('../helpers/menu-frontend');
 
 
-const login = async(req, res = response) => {
+const login = async( req, res = response ) => {
 
-    const {email, password} = req.body;
+    const { email, password } = req.body;
 
-    try{
-        //verificar email
+    try {
+        
+        // Verificar email
         const usuarioDB = await Usuario.findOne({ email });
 
-        if(!usuarioDB){
+        if ( !usuarioDB ) {
             return res.status(404).json({
                 ok: false,
-                msg: 'email no encontrado'
-            });    
+                msg: 'Email no encontrado'
+            });
         }
-        //verificar pass
-        const validPassword = bcrypt.compareSync( password, usuarioDB.password);
 
-        if(!validPassword){
-            return res.status(404).json({
+        // Verificar contraseña
+        const validPassword = bcrypt.compareSync( password, usuarioDB.password );
+        if ( !validPassword ) {
+            return res.status(400).json({
                 ok: false,
-                msg: 'password invalido'
-            });    
+                msg: 'Contraseña no válida'
+            });
         }
 
-        // Generar token - JWT
-        const token = await generarJWT(usuarioDB.id);
+        // Generar el TOKEN - JWT
+        const token = await generarJWT( usuarioDB.id );
 
-        res.status(200).json({
+
+        res.json({
             ok: true,
-            token
-        })
+            token,
+            menu: getMenuFrontEnd( usuarioDB.role )
+        });
 
-
-
-    }catch(error){
+    } catch (error) {
         console.log(error);
         res.status(500).json({
             ok: false,
-            msg: 'Error en Login'
+            msg: 'Hable con el administrador'
         })
+    }
 
-    }    
 
 }
 
-const googleSignIn = async(req, res = response) => {
+
+const googleSignIn = async( req, res = response ) => {
 
     const googleToken = req.body.token;
 
-    try{
+    try {
 
-        const { name, email, picture } = await googleVerify(googleToken);
+        const { name, email, picture } = await googleVerify( googleToken );
 
-        // verifico si ya existe ese email en nuestra DB
         const usuarioDB = await Usuario.findOne({ email });
         let usuario;
 
-        if (!usuarioDB){
+        if ( !usuarioDB ) {
+            // si no existe el usuario
             usuario = new Usuario({
                 nombre: name,
-                email, 
+                email,
                 password: '@@@',
                 img: picture,
                 google: true
-            })
-
-        }else {
-            // ya existe porque se registró manualmente
+            });
+        } else {
+            // existe usuario
             usuario = usuarioDB;
             usuario.google = true;
-            usuario.password = '@@@';
-
         }
 
         // Guardar en DB
         await usuario.save();
 
-        // Generar token - JWT
-        const token = await generarJWT(usuarioDB.id);
-
-
+        // Generar el TOKEN - JWT
+        const token = await generarJWT( usuario.id );
+        
         res.json({
             ok: true,
-            token
+            token,
+            menu: getMenuFrontEnd( usuario.role )
         });
 
-    }
-    catch(error){
-
+    } catch (error) {
+        
         res.status(401).json({
             ok: false,
-            msg: 'Error validando GoogleToken'
+            msg: 'Token no es correcto',
         });
-
     }
-
 
 }
 
@@ -111,18 +107,24 @@ const renewToken = async(req, res = response) => {
 
     const uid = req.uid;
 
-    // Generar token - JWT
-    const token = await generarJWT(uid);
+    // Generar el TOKEN - JWT
+    const token = await generarJWT( uid );
 
-    // obtener el usuario por uid
-    const usuario = await Usuario.findById(uid);
+    // Obtener el usuario por UID
+    const usuario = await Usuario.findById( uid );
+
 
     res.json({
         ok: true,
         token,
-        usuario
+        usuario,
+        menu: getMenuFrontEnd( usuario.role )
     });
+
 }
+
+
+
 
 module.exports = {
     login,
