@@ -56,8 +56,6 @@ const actualizarImagen = async(tipo, id, nombreArchivo) => {
             break;   
 
     }
-    
-    console.log('actualizarImagen');
 
 }
 
